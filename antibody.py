@@ -85,7 +85,7 @@ plt.pause(0.001) # Necessary pause function to casue the plot to update
 
 #### SPOILERS #####
 # counter values for posting analytics
-spoiler = '167.99.146.239' # Behold the IP for the malignant DNS, its here to measure precision locally. SO BE A GOOD SPORT AND DONT ABUSE IT
+spoiler = '167.99.224.175' # Behold the IP for the malignant DNS, its here to measure precision locally. SO BE A GOOD SPORT AND DONT ABUSE IT
 badCount = 0 # bad packet count as predicted by the SVM
 goodCount = 0 # good packet count as predicted by the SVM
 actualBad = 0 # actual bad packet count, thanks to spoiler
