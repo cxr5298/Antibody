@@ -292,6 +292,8 @@ def hotStripOut(pack, spoilerAddress, spoilerCount):
 		else:
 			qOR = "A"
 	else:
+		if pack.sprintf("%IP.src%") == spoilerAddress:
+			spoilerCount += 1
 		if pack.flags==2L:
 			qOR="Q"# = pack.sprintf("%UDP.dport%")
 		else:
