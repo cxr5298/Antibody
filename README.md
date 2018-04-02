@@ -1,3 +1,8 @@
 Author: Chris Remillard
+Folder: Antibody
 
-This is the dns-tunneling Antibody as it currently stands. Unfortunately the 'meat' of the Antibody, the One-Class Support Vector Machine, is as of yet unimplemented. This is due to the fact that the Antibody component of this project is still in research. Any statistical learning method is only as good as the data used to train it, as such the predominent amount of time spent on this project has been in doing research and learning about the features of DNS traffic. This has proven to be a surprisingly difficult and challenging problem, as DNS packets and UDP don't have features that lend themselves to being uniquely identified and thus have their individual components analyzed for variant features. However, this is not an insurmountable problem as shown in our phase 1 submission this problem has been solved before by those who have likewise used statistical fingerprinting on DNS traffic. With break starting I will have a significantly larger amount of time to finish learning the necessary background information and statistical experimentation to identify an automated process for doing this as the end goal with this antibody is to create it such that it could theoretically work on a live machine and not just the controlled environment provided by a VM and research setting.
+This is a classification Support Vector Machine approach to statistical analysis and evaluation of DNS traffic and its probability of being a product of a DNS tunnel. 
+
+Usage: sudo ./antibody.py -<i|o> -t <path/to/trainingFile.cap> -s <interval in minutes>
+
+...oh wait... I'll just write up the ReadMe.md on github... sorry. Love you. See you later.

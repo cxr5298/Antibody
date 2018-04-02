@@ -59,13 +59,15 @@ components = PCA(n_components=3).fit(trainFrame) # Performs principle component 
 												 # amount of variation across all packets. PC2 is the second most influential feature
 												 # cluster, and so on and so forth.
 
-components_2D = components.transform(trainFrame) # transforms
-components_2D = normalize(components_2D)
+components_2D = components.transform(trainFrame) # transforms the principle components to match the dimensions of the dataframe
+												 # in other words making it plottable
+components_2D = normalize(components_2D) # normalizes the data inside the principle components dataframe so that you can plot it
 
 ##### SVM
 #creation and fit
-classifier = svm.OneClassSVM(kernel="rbf", nu=0.05, degree=3)
-classifier.fit(components_2D)
+classifier = svm.OneClassSVM(kernel="rbf", nu=0.05, degree=3) # Creation of a OneClassSVM from the scikit learn package
+classifier.fit(components_2D) # Trains the SVM on the data, fitting an rbf hyperplane such that it best separates the normal
+							  # DNS traffic along the three principle axes.
 
 #realtime processing and graphical presentation
 		# -grab packet
@@ -73,49 +75,55 @@ classifier.fit(components_2D)
 		# -predict packet(s) classification (+1 for normal, -1 for attack)
 		# -plot
 
+## Initializes three dimensional plot
 plt.ion()
 fig = plt.figure()
 axes = fig.add_subplot(111, projection='3d')
-axes.scatter(components_2D[:,0], components_2D[:,1], components_2D[:,2])
-plt.pause(0.001)
+axes.scatter(components_2D[:,0], components_2D[:,1], components_2D[:,2]) # Plots the training data in 3 dimensions
+plt.pause(0.001) # Necessary pause function to casue the plot to update
 
 
 #### SPOILERS #####
+# counter values for posting analytics
 spoiler = '167.99.146.239' # Behold the IP for the malignant DNS, its here to measure precision locally. SO BE A GOOD SPORT AND DONT ABUSE IT
-badCount = 0
-goodCount = 0
-actualBad = 0
-actualGood = 0
+badCount = 0 # bad packet count as predicted by the SVM
+goodCount = 0 # good packet count as predicted by the SVM
+actualBad = 0 # actual bad packet count, thanks to spoiler
+actualGood = 0 # actual good packet coutn, thanks to spoiler
 
 
-seedCap = Packet()
-capture(args.boolean_switch,seedCap, spoiler, actualBad)
-hotCapture = {seedCap.domain:PacketData(seedCap)}
+seedCap = Packet() # An empty packet object which serves as the 'seed' for the hotCapture dictionary used for the realtime classification
+capture(args.boolean_switch,seedCap, spoiler, actualBad) # captures a DNS packet and stores its information into seedCap
+hotCapture = {seedCap.domain:PacketData(seedCap)} # creates the hotCapture dictionary needed for realtime DNS classification
 while True:
-	end = time.time() + float(interval)
-	while time.time() < end:
-		hotCap = Packet()
+	end = time.time() + float(interval) # count needed to end the specified interval
+	while time.time() < end: # until the interval elapses packets are captured and stored into hotCapture where they are computed for analysis
+		hotCap = Packet() 
 		capture(args.boolean_switch, hotCap, spoiler, actualBad)
 		hotCapture = colate(hotCap,hotCapture)
-	predFrame=toFrame(hotCapture)
-	topred = PCA(n_components=3).fit(predFrame)
-	comp = topred.transform(predFrame)
-	compt = normalize(comp)
-	axes.cla()
-	axes.scatter(components_2D[:, 0], components_2D[:, 1], components_2D[:, 2])
-	if compt.shape[1]==3:
-		pred = classifier.predict(compt)
+	predFrame=toFrame(hotCapture) # dataframe of the hotCapture dictionary
+	topred = PCA(n_components=3).fit(predFrame) # three dimensional principal component analysis of the dataFrame
+	comp = topred.transform(predFrame) # transformation of the princomp output for plotting
+	compt = normalize(comp) # normalization for plotting and comparison against the training dataset
+	axes.cla() # Clears the 3D plot
+	axes.scatter(components_2D[:, 0], components_2D[:, 1], components_2D[:, 2]) # repaints the 3D plot with the training data
+	# Note to whoever looks at this: All the plotting stuff is weird, I'd recommend you don't touch it lest you break something..
+	if compt.shape[1]==3: # sanity check incase something when wrong during packet capture
+		pred = classifier.predict(compt) # Feeds the components into the SVM's prediction function which returns a 1D array
+										 # of length equal to the number of rows in compt. The array contains only the values
+										 # +1 and -1 corresponding to each row in compt and reflecting either a normal (+1) or
+										 # anomalous (-1) classification for that row of compt by the SVM
 		row = compt.shape[0]
-		for i in range(0,row):
+		for i in range(0,row): # for each row in compt i check pred at row i to see the SVM's classification
 			if pred[i] == 1:
 				goodCount+=1
-				axes.scatter(compt[i,0], compt[i,1], compt[i,2], c='green')
+				axes.scatter(compt[i,0], compt[i,1], compt[i,2], c='green') # if +1 (normal) plot a green dot and add 1 to good predictions
 			else:
 				badCount+=1
-				axes.scatter(compt[i,0], compt[i,1], compt[i,2], c='red')
-		actualGood = (badCount + goodCount) - actualBad
-	plt.pause(0.001)
-	seedCap = Packet()
+				axes.scatter(compt[i,0], compt[i,1], compt[i,2], c='red') # if -1 (abnormal) plot a red dot and add 1 to bad predictions
+		actualGood = (badCount + goodCount) - actualBad # calculate the good and bad predicted/actual values
+	plt.pause(0.001) # give it a hot second for the plot to update
+	seedCap = Packet() # recreate the seedCap and hotCapture structures to prevent over fitting in the next interval
 	capture(args.boolean_switch, seedCap, spoiler, actualBad)
 	hotCapture = {seedCap.domain: PacketData(seedCap)}
 
@@ -130,3 +138,6 @@ while True:
 	else:
 		print("SVM false discovery rate is unknown at this time...")
 
+## A final word from the author: I recommend you use an interval close to the length of time over which the training set
+## was aggrogated. This will help the SVM produce as accurate of a prediction as possible. If you don't you'll run into a 
+## much higher false discovery rate as the SVM will underfit or overfit it's hyperplane as a result. 
